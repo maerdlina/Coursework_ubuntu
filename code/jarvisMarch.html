@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Babylon.js Cube Movement</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            /* width: 100%;
+            height: 70%; */
+            margin: 0;
+            padding: 0;
+            cursor: none;
+        }
+        .input-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .input-container input[type="text"] {
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 16px;
+    }
+
+    .input-container button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        background-color: #4CAF50;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .input-container button:hover {
+        background-color: #45a049;
+    }
+
+    #render {
+        width: 100%;
+        height: 60%;
+    }
+
+    #output {
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+    </style>
+</head>
+<body>
+    <br>
+    <div style="display: flex;">
+        <div class="input-container">
+            <input type="text" id="xInput" placeholder="X">
+            <!-- <input type="text" id="yInput" placeholder="Y"> -->
+            <input type="text" id="zInput" placeholder="Z">
+            <button onclick="addCoordinates()">Add Coordinates</button>
+            <button onclick="clearCoordinates()">Clear Coordinates</button>
+            <button onclick="displayStart()">Display start paint</button>
+            <button onclick="displayPaint()">Display paint</button>
+        </div>        
+    </div>
+    <div id="output"></div>
+    <br><canvas id="render"></canvas>
+    <div>
+        <!-- <canvas id="render" style="width: 800px; height: 800px;"></canvas> -->
+    </div>
+    
+    <script src="https://preview.babylonjs.com/babylon.js"></script>
+    <script>
+        function createWindow(){
+            var canvas = document.getElementById('render');
+            var engine = new BABYLON.Engine(canvas, true);
+            var createScene = function () {
+                var scene = new BABYLON.Scene(engine);
+                var camera = new BABYLON.FreeCamera('camera', new BABYLON.Vector3(0, 5,-10), scene);
+                camera.setTarget(BABYLON.Vector3.Zero());
+                camera.attachControl(canvas, true);
+                var light = new BABYLON.HemisphericLight('light', new BABYLON.Vector3(0,1,0), scene);
+                light.intensity = 0.7;
+                points = [
+                            new BABYLON.Vector3(0, 0, 3),
+                            new BABYLON.Vector3(2, 0, 2),
+                            new BABYLON.Vector3(1, 0, 1),
+                            new BABYLON.Vector3(2, 0, 1),
+                            new BABYLON.Vector3(3, 0, 0),
+                            new BABYLON.Vector3(0, 0, 0),
+                            new BABYLON.Vector3(3, 0, 3),
+                ];
+                // points = [];
+                // for(var i = 0; i < coordinates.length; i++){
+                //     points.push(new BABYLON.Vector3(coordinates[i].x, coordinates[i].y, coordinates[i].z))
+                // }
+                let n = points.length; 
+                var a = convexHull(points, n); 
+                console.log("new points ", a);
+                console.log("a[0]: ", a[0]);
+
+                function createPlaneFromPointsNew(a, scene) {
+                    var lines = [];
+                    for (var i = 0; i < a.length - 1; i++) {
+                    var line = [a[i], a[i + 1]];
+                    lines.push(line);
+                    console.log("i: ", i);
+                    }
+                    var line = [a[a.length - 1], a[0]];
+                    lines.push(line);
+                    return BABYLON.MeshBuilder.CreateLineSystem("plane", { lines: lines }, scene);
+                }
+                var customPlane = createPlaneFromPointsNew(a, scene);
+
+                return scene;
+            };
+            var scene = createScene();
+            engine.runRenderLoop(function(){
+                scene.render();
+            });
+        }
+    </script>
+
+    <script>
+        function createWindowStart(pointsOld){
+            var canvas = document.getElementById('render');
+            var engine = new BABYLON.Engine(canvas, true);
+            var createScene = function () {
+                var scene = new BABYLON.Scene(engine);
+                var camera = new BABYLON.FreeCamera('camera', new BABYLON.Vector3(0, 5,-10), scene);
+                camera.setTarget(BABYLON.Vector3.Zero());
+                camera.attachControl(canvas, true);
+                var light = new BABYLON.HemisphericLight('light', new BABYLON.Vector3(0,1,0), scene);
+                light.intensity = 0.7;
+                
+                points = [
+                            new BABYLON.Vector3(0, 0, 3),
+                            new BABYLON.Vector3(2, 0, 2),
+                            new BABYLON.Vector3(1, 0, 1),
+                            new BABYLON.Vector3(2, 0, 1),
+                            new BABYLON.Vector3(3, 0, 0),
+                            new BABYLON.Vector3(0, 0, 0),
+                            new BABYLON.Vector3(3, 0, 3),
+                ];
+
+                function createPlaneFromPoints(points, scene) {
+                    let lines = [];
+                    for (let i = 0; i < points.length; i++) {
+                        for (let j = i + 1; j < points.length; j++) {
+                            lines.push([points[i], points[j]]);
+                        }
+                    }
+                    return BABYLON.MeshBuilder.CreateLineSystem("plane", { lines: lines }, scene);
+                }
+
+                var customPlane = createPlaneFromPoints(points, scene);
+
+                return scene;
+            };
+            var scene = createScene();
+            engine.runRenderLoop(function(){
+                scene.render();
+            });
+        }
+    </script>
+
+    <script>
+function orientation(p, q, r) 
+{ 
+    let val = (q.z - p.z) * (r.x - q.x) - (q.x - p.x) * (r.z - q.z); 
+    console.log("val: ", val);
+    console.log(`p: ${p}, q: ${q}:, r: ${r}`);
+         
+        if (val == 0) return 0;  // collinear 
+        return (val > 0)? 1: 2; // clock or counterclock wise 
+} 
+  
+// Prints convex hull of a set of n points. 
+function convexHull(points, n) 
+{ 
+    // There must be at least 3 points 
+        if (n < 3) return; 
+         
+        // Initialize Result 
+        let hull = []; 
+         
+        // Find the leftmost point 
+        let l = 0; 
+        for (let i = 1; i < n; i++) 
+            if (points[i].x < points[l].x) 
+                l = i; 
+         
+        // Start from leftmost point, keep moving  
+        // counterclockwise until reach the start point 
+        // again. This loop runs O(h) times where h is 
+        // number of points in result or output. 
+        let p = l, q; 
+        console.log("p = l, q: ", q);
+        console.log("p: ", p, "l: ", l);
+        do
+        { 
+          
+            // Add current point to result 
+            hull.push(points[p]); 
+         
+            // Search for a point 'q' such that  
+            // orientation(p, q, x) is counterclockwise  
+            // for all points 'x'. The idea is to keep  
+            // track of last visited most counterclock- 
+            // wise point in q. If any point 'i' is more  
+            // counterclock-wise than q, then update q. 
+            q = (p + 1) % n; 
+            console.log(`(${p}+1)%${n}: `, q);
+            for (let i = 0; i < n; i++) 
+            { 
+               // If i is more counterclockwise than  
+               // current q, then update q 
+               if (orientation(points[p], points[i], points[q]) == 2) 
+               {
+                q = i;
+                console.log("q after orientation: ", q);
+                console.log(`points${p}: ${points[p]}, points${i}: ${points[i]}, points${q}: ${points[q]}`);
+                console.log(``);
+               }
+                   
+            } 
+         
+            // Now q is the most counterclockwise with 
+            // respect to p. Set p as q for next iteration,  
+            // so that q is added to result 'hull' 
+            p = q; 
+            console.log("p: ", p, "l: ", l);
+         
+        } while (p != l);  // While we don't come to first  
+                           // point 
+         
+        // Print Result 
+        return hull;
+} 
+
+    </script>
+
+<script>
+    var coordinates = [];
+
+    function addCoordinates() {
+        var x = document.getElementById('xInput').value;
+        //var y = document.getElementById('yInput').value;
+        y = 0;
+        var z = document.getElementById('zInput').value;
+        coordinates.push({ x: x, y: y, z: z });
+        console.log('Coordinates:', coordinates);
+        displayCoordinates();
+    }
+
+    function clearCoordinates() {
+        coordinates = [];
+        points = []
+        console.log('Coordinates cleared');
+    }
+
+    function displayCoordinates() {
+        var output = document.getElementById('output');
+        output.innerHTML = '';
+        coordinates.forEach(function(coord) {
+            output.innerHTML += 'X: ' + coord.x + ', Y: ' + coord.y + ', Z: ' + coord.z + '<br>';
+        });
+        // console.log(coordinates[0].x)
+    }
+
+    function displayPaint(){
+        createWindow();
+    }
+    function displayStart(){
+        createWindowStart();
+    }
+</script>
+</body>
+</html>
